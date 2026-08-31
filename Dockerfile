@@ -17,7 +17,10 @@ RUN if python3 -c "import sys,tomllib; d=tomllib.load(open('pyproject.toml','rb'
 COPY . .
 
 
-RUN DJANGO_SECRET_KEY=build-only DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_ADMIN_URL=build-only python manage.py collectstatic --noinput
+# DATABASE_URL is required by config/settings/production.py so the SQLite
+# fallback in base.py can never reach production. collectstatic has no
+# database, hence the throwaway value; the real URL is injected at runtime.
+RUN DJANGO_SECRET_KEY=build-only DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_ADMIN_URL=build-only DATABASE_URL=sqlite:///build-only.db python manage.py collectstatic --noinput
 
 
 EXPOSE 8000
