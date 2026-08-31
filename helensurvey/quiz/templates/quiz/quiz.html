@@ -1,0 +1,92 @@
+{% extends "quiz/base_quiz.html" %}
+{% load static %}
+
+{% block content %}
+  <section id="intro" class="screen active">
+    <div class="grow">
+      <span class="eyebrow">Pathway Quiz · {{ statements_count }} statements</span>
+      <h1 class="title">Pathway Quiz</h1>
+      <div class="badge-row">
+        {% for pathway in pathways %}
+          <div class="chip" style="background:{{ pathway.hex }}" title="{{ pathway.name }}">
+            <svg viewBox="0 0 24 24" style="fill:none;">{{ pathway.icon }}</svg>
+          </div>
+        {% endfor %}
+      </div>
+      <p class="lede">
+        As we are shaping up our Industry Challenge Programme, we would like to get
+        to know more about <strong>you</strong>.
+      </p>
+      <p class="lede">
+        When taking part in challenge activities, you'll often take on a particular
+        role within a team — we call these <strong>Pathway roles</strong>.
+      </p>
+      <p class="lede">
+        This quiz will enable us to identify which Pathway roles you most identify
+        with, given your previous background and your immediate aspirations.
+      </p>
+      <div class="field">
+        <label for="nameInput">Your name</label>
+        <input type="text" id="nameInput" placeholder="Enter your name" autocomplete="off" maxlength="120" />
+      </div>
+    </div>
+    <button class="btn-primary" id="startBtn" type="button">Start the quiz</button>
+    <a class="staff-link" href="{% url 'quiz:results' %}" title="Staff results">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3.2" />
+        <path d="M12 2.5V5.5M12 18.5V21.5M21.5 12H18.5M5.5 12H2.5M18.6 5.4L16.5 7.5M7.5 16.5L5.4 18.6M18.6 18.6L16.5 16.5M7.5 7.5L5.4 5.4" />
+      </svg>
+    </a>
+  </section>
+
+  <section id="quiz" class="screen">
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="qcount eyebrow" id="qCount"></div>
+    <h2 id="qtext"></h2>
+    <div id="rateWrap">
+      <button class="rate-btn rate-confident" type="button" data-rating="confident">
+        I can do this with some confidence
+      </button>
+      <button class="rate-btn rate-growing" type="button" data-rating="growing">
+        I am actively trying to get better at this
+      </button>
+      <button class="rate-btn rate-skip" type="button" data-rating="skip">
+        I am not interested in this
+      </button>
+    </div>
+    <div class="qnav">
+      <button class="back-link" id="backBtn" type="button">← back</button>
+    </div>
+  </section>
+
+  <section id="results" class="screen">
+    <div class="grow">
+      <div class="badge-wrap" id="badgeWrap"></div>
+      <h2 id="resTitle"></h2>
+      <div class="subtitle"><span id="resSubtitle"></span></div>
+      <p class="desc" id="resDesc"></p>
+      <button class="toggle-breakdown" id="toggleBreakdown" type="button">See your full breakdown ↓</button>
+      <div class="breakdown" id="breakdown">
+        <div class="breakdown-legend">
+          <span><span class="legend-dot" style="background:var(--text-hi)"></span>confident</span>
+          <span><span class="legend-dot" style="background:var(--text-hi);opacity:0.45"></span>actively trying</span>
+        </div>
+        <div id="breakdownRows"></div>
+      </div>
+      <div class="save-status" id="saveStatus"></div>
+      <p class="signoff">Thank you for completing the quiz!<br />— The CDT Team</p>
+    </div>
+    <button class="btn-ghost" id="retakeBtn" type="button">Take it again</button>
+  </section>
+{% endblock content %}
+
+{% block extra_js %}
+  {{ statements_data|json_script:"statements-data" }}
+  {{ pathways_data|json_script:"pathways-data" }}
+  {# CSRF_COOKIE_HTTPONLY is on, so the token is rendered here for the
+     fetch() call rather than read back out of the cookie. #}
+  <form id="csrfHolder" hidden>{% csrf_token %}</form>
+  <script src="{% static 'quiz/js/quiz.js' %}"
+          data-submit-url="{% url 'quiz:submit' %}"
+          id="quizScript"></script>
+{% endblock extra_js %}

@@ -1,0 +1,17 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Pathway Quiz{% endblock title %}</title>
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}" />
+    <link rel="stylesheet" href="{% static 'quiz/css/quiz.css' %}" />
+    {% block extra_css %}{% endblock extra_css %}
+  </head>
+  <body>
+    <div class="app {% block app_class %}{% endblock app_class %}">
+      {% block content %}{% endblock content %}
+    </div>
+    {% block extra_js %}{% endblock extra_js %}
+  </body>
+</html>

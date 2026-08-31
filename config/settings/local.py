@@ -1,4 +1,5 @@
 from .base import *  # noqa: F403
+from .base import BASE_DIR
 from .base import INSTALLED_APPS
 from .base import MIDDLEWARE
 from .base import env
@@ -14,6 +15,17 @@ SECRET_KEY = env(
 )
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]  # noqa: S104
+
+# DATABASES
+# ------------------------------------------------------------------------------
+# Local dev uses SQLite; production uses Postgres (see base.py / production.py).
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": str(BASE_DIR / "db.sqlite3"),
+        "ATOMIC_REQUESTS": True,
+    },
+}
 
 # CACHES
 # ------------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 # ruff: noqa: ERA001, E501
 """Base settings to build other settings files upon."""
+
 import os
 from pathlib import Path
 
@@ -48,7 +49,7 @@ LOCALE_PATHS = [str(BASE_DIR / "locale")]
 
 if os.getenv("DATABASE_URL", default=None):
     DATABASES = {"default": env.db("DATABASE_URL")}
-else:
+elif os.getenv("POSTGRES_DB", default=None):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -57,6 +58,15 @@ else:
             "PASSWORD": env.str("POSTGRES_PASSWORD"),
             "HOST": env.str("POSTGRES_HOST", default="postgres"),
             "PORT": env.str("POSTGRES_PORT", default="5432"),
+        },
+    }
+else:
+    # Local dev fallback. `production.py` requires DATABASE_URL, so this can
+    # never silently reach production.
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": str(BASE_DIR / "db.sqlite3"),
         },
     }
 
@@ -95,6 +105,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "helensurvey.users",
+    "helensurvey.quiz",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -115,7 +126,9 @@ AUTHENTICATION_BACKENDS = [
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
 AUTH_USER_MODEL = "users.User"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-redirect-url
-LOGIN_REDIRECT_URL = "users:redirect"
+# Signing in is a staff activity here, so land on the results dashboard
+# rather than the signed-in user's own profile page.
+LOGIN_REDIRECT_URL = "quiz:results"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-url
 LOGIN_URL = "account_login"
 
@@ -240,7 +253,7 @@ EMAIL_TIMEOUT = 5
 # Django Admin URL.
 ADMIN_URL = "admin/"
 # https://docs.djangoproject.com/en/dev/ref/settings/#admins
-ADMINS = ['"Helen Scarlett O'Neil" <andytwoods@gmail.com>']
+ADMINS = ['"Helen Scarlett O\'Neil" <andytwoods@gmail.com>']
 # https://docs.djangoproject.com/en/dev/ref/settings/#managers
 MANAGERS = ADMINS
 # https://cookiecutter-django.readthedocs.io/en/latest/settings.html#other-environment-settings
@@ -276,13 +289,16 @@ REDIS_SSL = REDIS_URL.startswith("rediss://")
 
 # django-allauth
 # ------------------------------------------------------------------------------
-ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
+# No public sign-up: the quiz itself is anonymous, and the only accounts are
+# staff ones created with `createsuperuser`.
+ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", False)
 # https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_LOGIN_METHODS = {"username"}
 # https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
-# https://docs.allauth.org/en/latest/account/configuration.html
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+# There is no email system in this project (see production.py), so verification
+# is off; without registration there is nothing to verify anyway.
+ACCOUNT_EMAIL_VERIFICATION = "none"
 # https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_ADAPTER = "helensurvey.users.adapters.AccountAdapter"
 # https://docs.allauth.org/en/latest/account/forms.html

@@ -17,7 +17,6 @@ dependencies = [
   "crispy-bootstrap5==2026.3",
   "django==6.0.8",
   "django-allauth[mfa]==65.19.1",
-  "django-anymail==15.1",
   "django-crispy-forms==2.7",
   "django-environ==0.14.0",
   "django-model-utils==5.0.0",
@@ -136,6 +135,11 @@ lint.ignore = [
   # https://github.com/astral-sh/ruff/issues/7871
 ]
 lint.isort.force-single-line = true
+# Typographic characters (curly quotes, em dashes, middots) are deliberate in
+# the participant-facing copy.
+lint.allowed-confusables = [ "‘", "’", "—", "·" ]
+# HTTP status codes and small fixtures read better inline in tests.
+lint.per-file-ignores."*/tests/*" = [ "PLR2004" ]
 
 # ==== pyproject-fmt ====
 [tool.pyproject-fmt]

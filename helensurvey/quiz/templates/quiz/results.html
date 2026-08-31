@@ -1,0 +1,67 @@
+{% extends "quiz/base_quiz.html" %}
+
+{% block title %}Pathway Quiz · staff results{% endblock title %}
+{% block app_class %}staff{% endblock app_class %}
+
+{% block content %}
+  <div class="arow">
+    <span class="eyebrow">Staff · results</span>
+    <a class="back-link" href="{% url 'quiz:quiz' %}">← back to quiz</a>
+  </div>
+  <h2>Team overview</h2>
+
+  <div class="staff-btns">
+    <a class="btn-ghost" href="{% url 'quiz:results' %}">Refresh</a>
+    <a class="btn-ghost" href="{% url 'quiz:results_csv' %}">Export CSV</a>
+  </div>
+
+  {% if not responses %}
+    <div class="eyebrow" style="margin-top:20px;">No responses yet.</div>
+  {% else %}
+    <div class="agg-block">
+      <div class="agg-title">
+        {{ total }} response{{ total|pluralize }}{% if flagged %} · {{ flagged }} flagged for outreach{% endif %} · primary pathway distribution
+      </div>
+      {% for bar in primary_bars %}
+        <div class="brow">
+          <div class="blabel">{{ bar.meta.name }}</div>
+          <div class="btrack">
+            <div class="bseg-confident" style="width:{{ bar.percent|floatformat:2 }}%;background:{{ bar.meta.hex }}"></div>
+          </div>
+          <div class="bval">{{ bar.count }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="agg-block">
+      <div class="agg-title">Ascending (actively developing) distribution</div>
+      {% for bar in ascending_bars %}
+        <div class="brow">
+          <div class="blabel">{{ bar.meta.name }}</div>
+          <div class="btrack">
+            <div class="bseg-confident"
+                 style="width:{{ bar.percent|floatformat:2 }}%;background:{{ bar.meta.hex }};opacity:0.55"></div>
+          </div>
+          <div class="bval">{{ bar.count }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="agg-block">
+      <div class="agg-title">All responses</div>
+      <table class="plist">
+        <tbody>
+          {% for response in responses %}
+            <tr>
+              <td class="tname">
+                {{ response.display_name }}<br />
+                <span class="tts">{{ response.created|date:"j M Y, H:i" }}</span>
+              </td>
+              <td class="tresult">{{ response.result_label }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock content %}
