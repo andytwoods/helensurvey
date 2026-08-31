@@ -1,0 +1,16 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v0.1.7-34-gc3cc86c
+_src_path: gh:andytwoods/django-appliku-copier
+db_type: postgresql_18
+email_backend: console
+media_storage: none
+package_manager: uv
+production_settings_module: config.settings.production
+project_slug: helensurvey
+python_version: '3.14'
+secret_key_var: DJANGO_SECRET_KEY
+superuser_email: andytwoods@gmail.com
+task_runner: none
+use_sentry: false
+use_whitenoise_manifest: true
+web_server: gunicorn

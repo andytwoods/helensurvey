@@ -1,12 +1,20 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
 from django.views.generic import TemplateView
 
+
+def health(request):
+    """Liveness probe for Appliku. Deliberately touches nothing."""
+    return HttpResponse("ok", content_type="text/plain")
+
+
 urlpatterns = [
+    path("health", health, name="health"),
     # The quiz is the whole site, so it lives at the root.
     path("", include("helensurvey.quiz.urls", namespace="quiz")),
     path(
