@@ -326,3 +326,8 @@ helensurvey/media/
 
 .pytest_cache/
 /.env.appliku
+
+# Cookiecutter's docker-compose dotenv files. They hold a generated
+# DJANGO_SECRET_KEY and Postgres passwords; this project deploys through
+# Appliku config vars instead, so they are never committed.
+.envs/
