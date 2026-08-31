@@ -17,7 +17,7 @@ RUN if python3 -c "import sys,tomllib; d=tomllib.load(open('pyproject.toml','rb'
 COPY . .
 
 
-RUN DJANGO_SECRET_KEY=build-only DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_ADMIN_URL=build-dummy python manage.py collectstatic --noinput
+RUN DJANGO_SECRET_KEY=build-only DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_ADMIN_URL=build-only python manage.py collectstatic --noinput
 
 
 EXPOSE 8000
