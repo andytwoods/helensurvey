@@ -24,6 +24,14 @@ class Rating(models.TextChoices):
     SKIP = "skip", _("I am not interested in this")
 
 
+# The Rating labels are the participant-facing sentences. Staff scanning ten
+# rows per person need something far shorter.
+RATING_SHORT = {
+    Rating.CONFIDENT: "confident",
+    Rating.GROWING: "actively trying",
+    Rating.SKIP: "not interested",
+}
+
 # Display order for chips, breakdown rows and tie-breaking.
 PATHWAY_ORDER = [
     Pathway.MANAGEMENT,

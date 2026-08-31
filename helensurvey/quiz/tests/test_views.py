@@ -1,10 +1,12 @@
 """End-to-end behaviour of the quiz page, submission endpoint and staff views."""
 
+import csv
 import json
 import re
 
 import pytest
 from django.urls import reverse
+from django.utils.html import escape
 
 from helensurvey.quiz.models import Answer
 from helensurvey.quiz.models import Response
@@ -212,3 +214,81 @@ def test_inactive_statements_are_not_served_or_required(client):
     http_response = _post(client, {"name": "Ada", "answers": _answers()})
     assert http_response.status_code == 200
     assert Answer.objects.count() == active
+
+def _staff(django_user_model):
+    return django_user_model.objects.create_user(
+        username="staff2",
+        email="staff2@example.com",
+        password="pw",  # noqa: S106
+        is_staff=True,
+    )
+
+
+def test_results_page_shows_each_participants_answers(client, django_user_model):
+    """Helen needs per-participant detail, not just the aggregate."""
+    statements = list(Statement.objects.filter(is_active=True))
+    technical = [s.pk for s in statements if s.pathway == Pathway.TECHNICAL.value]
+    overrides = dict.fromkeys(technical, Rating.CONFIDENT.value)
+    _post(client, {"name": "Ada", "answers": _answers(Rating.SKIP.value, overrides)})
+
+    client.force_login(_staff(django_user_model))
+    body = client.get(reverse("quiz:results")).content.decode()
+
+    # Every statement is listed for the participant, with its rating.
+    for statement in statements:
+        assert escape(statement.text) in body
+    assert "confident" in body
+    assert "not interested" in body
+
+
+def test_results_page_answer_data_is_per_response(client, django_user_model):
+    _post(client, {"name": "Ada", "answers": _answers(Rating.CONFIDENT.value)})
+    _post(client, {"name": "Grace", "answers": _answers(Rating.GROWING.value)})
+
+    client.force_login(_staff(django_user_model))
+    context = client.get(reverse("quiz:results")).context["responses"]
+
+    by_name = {item["response"].name: item for item in context}
+    ada_confident = sum(b["confident"] for b in by_name["Ada"]["bars"])
+    grace_growing = sum(b["growing"] for b in by_name["Grace"]["bars"])
+    assert ada_confident == len(by_name["Ada"]["answers"])
+    assert grace_growing == len(by_name["Grace"]["answers"])
+    assert sum(b["confident"] for b in by_name["Grace"]["bars"]) == 0
+
+
+def test_results_page_does_not_query_per_response(
+    client,
+    django_user_model,
+    django_assert_max_num_queries,
+):
+    """The per-participant detail must not reintroduce an N+1."""
+    for name in ("A", "B", "C", "D", "E"):
+        _post(client, {"name": name, "answers": _answers()})
+
+    client.force_login(_staff(django_user_model))
+    # Session/user lookups plus a fixed handful for the page itself; the point
+    # is that this does not grow with the number of responses.
+    with django_assert_max_num_queries(12):
+        assert client.get(reverse("quiz:results")).status_code == 200
+
+
+def test_csv_includes_each_statement_answer(client, django_user_model):
+    statements = list(Statement.objects.filter(is_active=True))
+    ethics = [s.pk for s in statements if s.pathway == Pathway.ETHICS.value]
+    overrides = dict.fromkeys(ethics, Rating.GROWING.value)
+    _post(client, {"name": "Ada", "answers": _answers(Rating.SKIP.value, overrides)})
+
+    client.force_login(_staff(django_user_model))
+    rows = list(
+        csv.reader(
+            client.get(reverse("quiz:results_csv")).content.decode().splitlines(),
+        ),
+    )
+    header, row = rows[0], rows[1]
+
+    for statement in statements:
+        column = f"[{statement.get_pathway_display()}] {statement.text}"
+        assert column in header
+        assert row[header.index(column)] == (
+            Rating.GROWING.value if statement.pk in ethics else Rating.SKIP.value
+        )

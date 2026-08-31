@@ -18,6 +18,8 @@ from .models import Response
 from .models import Statement
 from .pathways import PATHWAY_META
 from .pathways import PATHWAY_ORDER
+from .pathways import RATING_SHORT
+from .pathways import Pathway
 from .pathways import Rating
 from .pathways import pathway_context
 from .scoring import describe
@@ -166,7 +168,10 @@ def _statements_per_pathway(statements) -> dict[str, int]:
 @staff_member_required
 def results(request: HttpRequest) -> HttpResponse:
     """Staff-only dashboard: pathway distribution plus every response."""
-    responses = list(Response.objects.all())
+    # One extra query for all answers rather than one per response; the per-
+    # participant breakdown below needs every rating.
+    responses = list(Response.objects.prefetch_related("answers__statement"))
+    statements = list(Statement.objects.all())
 
     totals = Response.objects.aggregate(
         total=Count("id"),
@@ -206,7 +211,7 @@ def results(request: HttpRequest) -> HttpResponse:
         request,
         "quiz/results.html",
         {
-            "responses": responses,
+            "responses": [_response_detail(r, statements) for r in responses],
             "total": totals["total"],
             "flagged": totals["flagged"],
             "primary_bars": bars(primary_counts, max_primary),
@@ -215,10 +220,60 @@ def results(request: HttpRequest) -> HttpResponse:
     )
 
 
+def _response_detail(response: Response, statements: list[Statement]) -> dict:
+    """One participant's full answers: pathway tallies plus every rating.
+
+    Built from the prefetched answers rather than fresh queries, so adding this
+    to the dashboard costs no extra query per participant.
+    """
+    per_pathway = _statements_per_pathway(statements)
+    confident = dict.fromkeys((str(p) for p in PATHWAY_ORDER), 0)
+    growing = dict.fromkeys((str(p) for p in PATHWAY_ORDER), 0)
+    by_statement = {}
+    for answer in response.answers.all():
+        by_statement[answer.statement_id] = answer.rating
+        if answer.rating == Rating.CONFIDENT:
+            confident[answer.statement.pathway] += 1
+        elif answer.rating == Rating.GROWING:
+            growing[answer.statement.pathway] += 1
+
+    def pct(count: int, pathway: str) -> float:
+        total = per_pathway.get(pathway, 0)
+        return count / total * 100 if total else 0
+
+    return {
+        "response": response,
+        "bars": [
+            {
+                "meta": PATHWAY_META[pathway],
+                "confident": confident[str(pathway)],
+                "growing": growing[str(pathway)],
+                "confident_percent": pct(confident[str(pathway)], str(pathway)),
+                "growing_percent": pct(growing[str(pathway)], str(pathway)),
+            }
+            for pathway in PATHWAY_ORDER
+        ],
+        "answers": [
+            {
+                "text": statement.text,
+                "meta": PATHWAY_META[Pathway(statement.pathway)],
+                "rating": by_statement.get(statement.pk),
+                "rating_label": RATING_SHORT[Rating(by_statement[statement.pk])]
+                if statement.pk in by_statement
+                else "—",
+            }
+            for statement in statements
+        ],
+    }
+
+
 @staff_member_required
 def results_csv(request: HttpRequest) -> HttpResponse:
     """Staff-only CSV export, one row per response with per-pathway tallies."""
     pathways = [str(p) for p in PATHWAY_ORDER]
+    # Every statement, in a stable order, so each gets its own column and the
+    # per-pathway totals can be checked against the individual answers.
+    statements = list(Statement.objects.all())
     http_response = HttpResponse(content_type="text/csv")
     http_response["Content-Disposition"] = (
         'attachment; filename="pathway-quiz-results.csv"'
@@ -234,6 +289,9 @@ def results_csv(request: HttpRequest) -> HttpResponse:
             *[f"confident_{p}" for p in pathways],
             *[f"growing_{p}" for p in pathways],
             *[f"skip_{p}" for p in pathways],
+            # Headed by the statement itself rather than an opaque q1/q2, so the
+            # file is readable without a separate key.
+            *[f"[{s.get_pathway_display()}] {s.text}" for s in statements],
             "timestamp",
         ],
     )
@@ -243,8 +301,10 @@ def results_csv(request: HttpRequest) -> HttpResponse:
     )
     for response in queryset:
         tallies = {r: dict.fromkeys(pathways, 0) for r in Rating.values}
+        by_statement = {}
         for answer in response.answers.all():
             tallies[answer.rating][answer.statement.pathway] += 1
+            by_statement[answer.statement_id] = answer.rating
         writer.writerow(
             [
                 response.display_name,
@@ -255,6 +315,7 @@ def results_csv(request: HttpRequest) -> HttpResponse:
                 *[tallies[Rating.CONFIDENT][p] for p in pathways],
                 *[tallies[Rating.GROWING][p] for p in pathways],
                 *[tallies[Rating.SKIP][p] for p in pathways],
+                *[by_statement.get(s.pk, "") for s in statements],
                 response.created.isoformat(),
             ],
         )

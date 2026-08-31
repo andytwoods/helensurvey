@@ -326,3 +326,73 @@ h1.title { font-size: 32px; line-height: 1.1; font-weight: 600; margin-top: 8px;
 
 .staff-btns { display: flex; gap: 10px; }
 .staff-btns .btn-ghost { flex: 1; }
+
+/* ---------- staff: per-participant detail ---------- */
+.presponse { border-bottom: 1px solid rgba(246, 243, 236, 0.08); }
+
+.presponse > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 11px 0;
+  cursor: pointer;
+  font-size: 13px;
+  list-style: none;
+}
+
+.presponse > summary::-webkit-details-marker { display: none; }
+
+.presponse > summary::after {
+  content: "▸";
+  color: var(--text-low);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.presponse[open] > summary::after { content: "▾"; }
+.presponse > summary:hover { color: var(--text-hi); }
+.presponse .tname { color: var(--text-hi); font-weight: 500; }
+.presponse .tts { display: block; color: var(--text-low); font-size: 11px; font-family: var(--mono); }
+.presponse .tresult { color: var(--text-mid); text-align: right; margin-left: auto; }
+
+.pdetail {
+  padding: 6px 0 20px;
+  border-top: 1px dashed rgba(246, 243, 236, 0.1);
+  margin-top: 2px;
+}
+
+.pnote { color: var(--text-mid); font-size: 13px; line-height: 1.5; margin: 14px 0 0; }
+
+.answers { list-style: none; margin: 0; padding: 0; }
+
+.answer {
+  display: grid;
+  grid-template-columns: 82px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(246, 243, 236, 0.06);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.apathway { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; }
+.atext { color: var(--text-mid); }
+
+.arating {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-low);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* The rating carries the meaning, so weight it rather than relying on colour. */
+.answer--confident .arating { color: var(--text-hi); font-weight: 500; }
+.answer--growing .arating { color: var(--text-mid); }
+
+@media (max-width: 560px) {
+  .answer { grid-template-columns: 1fr; gap: 3px; }
+  .arating { text-align: left; }
+}

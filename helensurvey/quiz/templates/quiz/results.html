@@ -48,20 +48,52 @@
     </div>
 
     <div class="agg-block">
-      <div class="agg-title">All responses</div>
-      <table class="plist">
-        <tbody>
-          {% for response in responses %}
-            <tr>
-              <td class="tname">
-                {{ response.display_name }}<br />
-                <span class="tts">{{ response.created|date:"j M Y, H:i" }}</span>
-              </td>
-              <td class="tresult">{{ response.result_label }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="agg-title">All responses · tap a name for their full answers</div>
+      {% for item in responses %}
+        <details class="presponse">
+          <summary>
+            <span class="tname">
+              {{ item.response.display_name }}
+              <span class="tts">{{ item.response.created|date:"j M Y, H:i" }}</span>
+            </span>
+            <span class="tresult">{{ item.response.result_label }}</span>
+          </summary>
+
+          <div class="pdetail">
+            {% if item.response.all_skip %}
+              <p class="pnote">Answered “not interested” to every statement — flagged for outreach.</p>
+            {% else %}
+              <div class="breakdown-legend">
+                <span><span class="legend-dot" style="background:var(--text-hi)"></span>confident</span>
+                <span><span class="legend-dot" style="background:var(--text-hi);opacity:0.45"></span>actively trying</span>
+              </div>
+              {% for bar in item.bars %}
+                <div class="brow">
+                  <div class="blabel">{{ bar.meta.name }}</div>
+                  <div class="btrack">
+                    <div class="bseg-confident"
+                         style="width:{{ bar.confident_percent|floatformat:2 }}%;background:{{ bar.meta.hex }}"></div>
+                    <div class="bseg-growing"
+                         style="width:{{ bar.growing_percent|floatformat:2 }}%;background:{{ bar.meta.hex }}"></div>
+                  </div>
+                  <div class="bval">{{ bar.confident }}c · {{ bar.growing }}t</div>
+                </div>
+              {% endfor %}
+            {% endif %}
+
+            <div class="agg-title" style="margin-top:20px;">Statement by statement</div>
+            <ul class="answers">
+              {% for answer in item.answers %}
+                <li class="answer answer--{{ answer.rating|default:"none" }}">
+                  <span class="apathway" style="color:{{ answer.meta.hex }}">{{ answer.meta.name }}</span>
+                  <span class="atext">{{ answer.text }}</span>
+                  <span class="arating">{{ answer.rating_label }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </details>
+      {% endfor %}
     </div>
   {% endif %}
 {% endblock content %}
