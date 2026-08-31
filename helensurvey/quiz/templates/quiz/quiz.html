@@ -83,8 +83,10 @@
 {% block extra_js %}
   {{ statements_data|json_script:"statements-data" }}
   {{ pathways_data|json_script:"pathways-data" }}
-  {# CSRF_COOKIE_HTTPONLY is on, so the token is rendered here for the
-     fetch() call rather than read back out of the cookie. #}
+  {% comment %}
+    CSRF_COOKIE_HTTPONLY is on, so the token is rendered here for the
+    fetch() call rather than read back out of the cookie.
+  {% endcomment %}
   <form id="csrfHolder" hidden>{% csrf_token %}</form>
   <script src="{% static 'quiz/js/quiz.js' %}"
           data-submit-url="{% url 'quiz:submit' %}"
