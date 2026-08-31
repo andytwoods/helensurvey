@@ -23,6 +23,7 @@
   var el = {
     intro: document.getElementById("intro"),
     nameInput: document.getElementById("nameInput"),
+    nameError: document.getElementById("nameError"),
     startBtn: document.getElementById("startBtn"),
     progressFill: document.getElementById("progressFill"),
     qCount: document.getElementById("qCount"),
@@ -195,12 +196,31 @@
 
   el.startBtn.addEventListener("click", function () {
     participantName = el.nameInput.value.trim();
+    if (!participantName) {
+      el.nameError.textContent = "Please enter your name to start.";
+      el.nameInput.classList.add("invalid");
+      el.nameInput.focus();
+      return;
+    }
+    el.nameError.textContent = "";
+    el.nameInput.classList.remove("invalid");
     order = shuffle(STATEMENTS);
     current = 0;
     answers = new Array(order.length).fill(null);
     el.saveStatus.textContent = "";
     renderQuestion();
     show("quiz");
+  });
+
+  el.nameInput.addEventListener("input", function () {
+    if (el.nameInput.value.trim()) {
+      el.nameError.textContent = "";
+      el.nameInput.classList.remove("invalid");
+    }
+  });
+
+  el.nameInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { el.startBtn.click(); }
   });
 
   document.querySelectorAll("#rateWrap .rate-btn").forEach(function (btn) {

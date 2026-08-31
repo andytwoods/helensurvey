@@ -79,13 +79,30 @@ def test_submission_is_scored_and_persisted(client):
 
 
 def test_all_skip_submission_is_flagged(client):
-    http_response = _post(client, {"name": "", "answers": _answers(Rating.SKIP.value)})
+    http_response = _post(
+        client,
+        {"name": "Ada", "answers": _answers(Rating.SKIP.value)},
+    )
     body = http_response.json()
     assert body["all_skip"] is True
     saved = Response.objects.get()
     assert saved.all_skip is True
-    assert saved.display_name == "Anonymous"
+    assert saved.display_name == "Ada"
     assert saved.result_label == "All ‘not interested’ — flagged"
+
+
+@pytest.mark.parametrize("name", ["", "   ", None])
+def test_submission_requires_a_name(client, name):
+    """The name is mandatory, and not only in the browser."""
+    http_response = _post(client, {"name": name, "answers": _answers()})
+    assert http_response.status_code == 400
+    assert http_response.json()["error"] == "Please enter your name."
+    assert not Response.objects.exists()
+
+
+def test_name_is_stripped_of_surrounding_whitespace(client):
+    _post(client, {"name": "  Ada  ", "answers": _answers()})
+    assert Response.objects.get().name == "Ada"
 
 
 def test_client_cannot_choose_its_own_result(client):

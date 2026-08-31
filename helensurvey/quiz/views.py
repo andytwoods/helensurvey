@@ -33,6 +33,7 @@ ERR_MALFORMED = "Malformed request."
 ERR_NO_ANSWERS = "No answers submitted."
 ERR_BAD_ANSWER = "Malformed answer."
 ERR_INCOMPLETE = "Please answer every statement."
+ERR_NO_NAME = "Please enter your name."
 
 
 def quiz(request: HttpRequest) -> HttpResponse:
@@ -149,6 +150,8 @@ def _parse_submission(body: bytes, statements: dict) -> tuple[str, dict[int, str
         raise ValidationError(ERR_INCOMPLETE)
 
     name = str(payload.get("name") or "").strip()[:MAX_NAME_LENGTH]
+    if not name:
+        raise ValidationError(ERR_NO_NAME)
     return name, cleaned
 
 

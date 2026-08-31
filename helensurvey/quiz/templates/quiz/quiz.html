@@ -27,7 +27,14 @@
       </p>
       <div class="field">
         <label for="nameInput">Your name</label>
-        <input type="text" id="nameInput" placeholder="Enter your name" autocomplete="off" maxlength="120" />
+        <input type="text"
+               id="nameInput"
+               placeholder="Enter your name"
+               autocomplete="off"
+               maxlength="120"
+               required
+               aria-describedby="nameError" />
+        <p class="field-error" id="nameError" role="alert"></p>
       </div>
     </div>
     <button class="btn-primary" id="startBtn" type="button">Start the quiz</button>

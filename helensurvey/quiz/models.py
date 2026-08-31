@@ -29,6 +29,8 @@ class Statement(models.Model):
 class Response(models.Model):
     """A completed run of the quiz by one participant."""
 
+    # Blank remains permitted at the DB level for responses recorded before
+    # the name became mandatory; the submit endpoint rejects empty names.
     name = models.CharField(_("Name"), max_length=120, blank=True)
     created = models.DateTimeField(_("Submitted"), auto_now_add=True, db_index=True)
     primary = models.CharField(
