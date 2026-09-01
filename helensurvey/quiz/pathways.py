@@ -45,10 +45,9 @@ PATHWAY_ORDER = [
 # marked safe for direct inclusion in templates and inline JSON.
 _ICONS = {
     Pathway.MANAGEMENT: (
-        '<path d="M7 3V21"/>'
-        '<path d="M7 4.5 L18 7.5 L7 10.5 Z" fill="currentColor" stroke="none"/>'
-        '<circle cx="7" cy="20.5" r="1.3" fill="currentColor" '
-        'stroke="none"/>'
+        '<circle cx="12" cy="7.5" r="6"/>'
+        '<circle cx="15.9" cy="14.25" r="6"/>'
+        '<circle cx="8.1" cy="14.25" r="6"/>'
     ),
     Pathway.CREATIVE: (
         '<path d="M12 2.5 L14 9.8 L21.5 12 L14 14.2 L12 21.5 L10 14.2 '

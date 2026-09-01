@@ -13,10 +13,10 @@
   --paper: #F3EFE6;
   --paper-dim: #E7E1D2;
   --text-hi: #F6F3EC;
-  --text-mid: rgba(246, 243, 236, 0.68);
-  --text-low: rgba(246, 243, 236, 0.42);
-  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --text-mid: rgba(190, 240, 240, 0.82);
+  --text-low: rgba(190, 240, 240, 0.56);
+  --sans: 'Century Gothic', 'OpenDyslexic', 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --serif: 'Century Gothic', 'OpenDyslexic', 'Fraunces', Georgia, 'Times New Roman', serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
