@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from .pathways import PATHWAY_META
 from .pathways import Pathway
 from .pathways import Rating
+from .pathways import decode_pathway_list
 
 
 class Statement(models.Model):
@@ -46,6 +47,18 @@ class Response(models.Model):
         blank=True,
     )
     is_pure = models.BooleanField(_("Pure result"), default=False)
+    depth = models.CharField(
+        _("Depth pathway(s)"),
+        max_length=80,
+        blank=True,
+        default="",
+        help_text=_(
+            "Pathways where the respondent gave both a confident and an "
+            "actively-trying answer. Independent of primary/ascending; "
+            "stored wrapped in commas so a specific pathway can be filtered "
+            "for without matching another pathway's slug as a substring.",
+        ),
+    )
     all_skip = models.BooleanField(
         _("Flagged for outreach"),
         default=False,
@@ -63,6 +76,13 @@ class Response(models.Model):
     @property
     def display_name(self) -> str:
         return self.name or "Anonymous"
+
+    @property
+    def depth_pathway_names(self) -> list[str]:
+        """Human-readable depth pathway names, in canonical display order."""
+        return [
+            PATHWAY_META[Pathway(p)]["name"] for p in decode_pathway_list(self.depth)
+        ]
 
     @property
     def result_label(self) -> str:

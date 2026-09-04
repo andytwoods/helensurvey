@@ -215,6 +215,7 @@ def test_inactive_statements_are_not_served_or_required(client):
     assert http_response.status_code == 200
     assert Answer.objects.count() == active
 
+
 def _staff(django_user_model):
     return django_user_model.objects.create_user(
         username="staff2",
@@ -270,6 +271,87 @@ def test_results_page_does_not_query_per_response(
     # is that this does not grow with the number of responses.
     with django_assert_max_num_queries(12):
         assert client.get(reverse("quiz:results")).status_code == 200
+
+
+def test_submission_returns_and_persists_depth_pathways(client):
+    """Ethics qualifies as depth without being primary or ascending, so the
+    API and the persisted record both surface it, note text included.
+    """
+    statements = list(Statement.objects.filter(is_active=True))
+    management = [s.pk for s in statements if s.pathway == Pathway.MANAGEMENT.value]
+    ethics = [s.pk for s in statements if s.pathway == Pathway.ETHICS.value]
+    technical = [s.pk for s in statements if s.pathway == Pathway.TECHNICAL.value]
+    overrides = {
+        management[0]: Rating.CONFIDENT.value,
+        management[1]: Rating.CONFIDENT.value,
+        ethics[0]: Rating.CONFIDENT.value,
+        ethics[1]: Rating.GROWING.value,
+        technical[0]: Rating.GROWING.value,
+        technical[1]: Rating.GROWING.value,
+    }
+    http_response = _post(
+        client,
+        {"name": "Ada", "answers": _answers(Rating.SKIP.value, overrides)},
+    )
+    body = http_response.json()
+    assert body["primary"] == Pathway.MANAGEMENT.value
+    assert body["ascending"] == Pathway.TECHNICAL.value
+    assert body["depth"] == [Pathway.ETHICS.value]
+    assert body["depth_note"] == "You're also building real depth in Ethics."
+
+    saved = Response.objects.get()
+    assert saved.depth_pathway_names == ["Ethics"]
+
+
+def test_csv_includes_depth_pathways_column(client, django_user_model):
+    statements = list(Statement.objects.filter(is_active=True))
+    management = [s.pk for s in statements if s.pathway == Pathway.MANAGEMENT.value]
+    overrides = {
+        management[0]: Rating.CONFIDENT.value,
+        management[1]: Rating.GROWING.value,
+    }
+    _post(client, {"name": "Ada", "answers": _answers(Rating.SKIP.value, overrides)})
+
+    client.force_login(_staff(django_user_model))
+    rows = list(
+        csv.reader(
+            client.get(reverse("quiz:results_csv")).content.decode().splitlines(),
+        ),
+    )
+    header, row = rows[0], rows[1]
+    assert row[header.index("depth_pathways")] == Pathway.MANAGEMENT.value
+
+
+def test_admin_shows_and_filters_by_depth_pathway(client, django_user_model):
+    statements = list(Statement.objects.filter(is_active=True))
+    management = [s.pk for s in statements if s.pathway == Pathway.MANAGEMENT.value]
+    overrides = {
+        management[0]: Rating.CONFIDENT.value,
+        management[1]: Rating.GROWING.value,
+    }
+    _post(client, {"name": "Ada", "answers": _answers(Rating.SKIP.value, overrides)})
+    _post(client, {"name": "Grace", "answers": _answers(Rating.SKIP.value)})
+
+    admin_user = django_user_model.objects.create_user(
+        username="root",
+        email="root@example.com",
+        password="pw",  # noqa: S106
+        is_staff=True,
+        is_superuser=True,
+    )
+    client.force_login(admin_user)
+
+    changelist_url = reverse("admin:quiz_response_changelist")
+    body = client.get(changelist_url).content.decode()
+    assert "Ada" in body
+    assert "Grace" in body
+    assert "Management" in body
+
+    filtered = client.get(changelist_url, {"depth_pathway": Pathway.MANAGEMENT.value})
+    assert filtered.status_code == 200
+    filtered_body = filtered.content.decode()
+    assert "Ada" in filtered_body
+    assert "Grace" not in filtered_body
 
 
 def test_csv_includes_each_statement_answer(client, django_user_model):

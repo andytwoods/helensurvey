@@ -116,3 +116,142 @@ def test_describe_all_skip_offers_a_human_route():
     copy = describe(score, "Ada")
     assert copy["title"] == "Thanks for being honest."
     assert "challenge producer" in copy["description"]
+
+
+# ---------- depth pathway ----------
+# A pathway is "depth" when the respondent gave both a confident and an
+# actively-trying answer to that pathway's two statements. score.depth is a
+# fully independent signal, never filtered for overlap with primary or
+# ascending — but describe()'s participant-facing note drops whichever
+# overlaps, so nothing reads as "Technical... also building depth in
+# Technical."
+
+
+def test_one_depth_pathway():
+    # Technical is the decoy primary (highest confident count) and Creative
+    # the decoy ascending (highest growing count among the rest), so
+    # Management is the sole depth pathway and doesn't overlap either.
+    score = score_answers(
+        [
+            (Pathway.MANAGEMENT.value, CONFIDENT),
+            (Pathway.MANAGEMENT.value, GROWING),
+            (Pathway.TECHNICAL.value, CONFIDENT),
+            (Pathway.TECHNICAL.value, CONFIDENT),
+            (Pathway.CREATIVE.value, GROWING),
+            (Pathway.CREATIVE.value, GROWING),
+        ],
+    )
+    assert score.primary == Pathway.TECHNICAL.value
+    assert score.ascending == Pathway.CREATIVE.value
+    assert score.depth == [Pathway.MANAGEMENT.value]
+    copy = describe(score)
+    assert copy["depth_note"] == "You're also building real depth in Management."
+
+
+def test_multiple_depth_pathways_are_listed_in_canonical_order():
+    # Audience is the decoy primary and Creative the decoy ascending, so all
+    # three depth pathways (Management, Technical, Ethics) stay clear of both
+    # and are listed in canonical order, not answer order.
+    score = score_answers(
+        [
+            (Pathway.ETHICS.value, CONFIDENT),
+            (Pathway.ETHICS.value, GROWING),
+            (Pathway.MANAGEMENT.value, CONFIDENT),
+            (Pathway.MANAGEMENT.value, GROWING),
+            (Pathway.TECHNICAL.value, CONFIDENT),
+            (Pathway.TECHNICAL.value, GROWING),
+            (Pathway.AUDIENCE.value, CONFIDENT),
+            (Pathway.AUDIENCE.value, CONFIDENT),
+            (Pathway.CREATIVE.value, GROWING),
+            (Pathway.CREATIVE.value, GROWING),
+        ],
+    )
+    assert score.primary == Pathway.AUDIENCE.value
+    assert score.ascending == Pathway.CREATIVE.value
+    assert score.depth == [
+        Pathway.MANAGEMENT.value,
+        Pathway.TECHNICAL.value,
+        Pathway.ETHICS.value,
+    ]
+    copy = describe(score)
+    assert copy["depth_note"] == (
+        "You're also building real depth in Management, Technical, and Ethics."
+    )
+
+
+def test_no_depth_pathway_when_nothing_pairs_confident_with_growing():
+    score = score_answers(
+        [
+            (Pathway.MANAGEMENT.value, CONFIDENT),
+            (Pathway.MANAGEMENT.value, CONFIDENT),
+            (Pathway.CREATIVE.value, GROWING),
+            (Pathway.CREATIVE.value, SKIP),
+            (Pathway.TECHNICAL.value, SKIP),
+            (Pathway.TECHNICAL.value, SKIP),
+        ],
+    )
+    assert score.depth == []
+    assert describe(score)["depth_note"] == ""
+
+
+def test_depth_pathway_equal_to_primary_is_kept_in_score_but_dropped_from_the_note():
+    """score.depth stays the full independent signal (for admin/CSV); the
+    participant-facing note omits a pathway already named as the primary
+    result, so nothing reads as "Management... also building depth in
+    Management."
+    """
+    score = score_answers(
+        [
+            (Pathway.MANAGEMENT.value, CONFIDENT),
+            (Pathway.MANAGEMENT.value, GROWING),
+            (Pathway.CREATIVE.value, SKIP),
+            (Pathway.CREATIVE.value, SKIP),
+        ],
+    )
+    assert score.primary == Pathway.MANAGEMENT.value
+    assert score.depth == [Pathway.MANAGEMENT.value]
+    copy = describe(score)
+    assert copy["subtitle"] == "Pure Management"
+    assert copy["depth_note"] == ""
+
+
+def test_depth_pathway_equal_to_ascending_is_kept_in_score_but_dropped_from_the_note():
+    """Same as above, for a depth pathway that matches the ascending result."""
+    score = score_answers(
+        [
+            (Pathway.MANAGEMENT.value, CONFIDENT),
+            (Pathway.MANAGEMENT.value, CONFIDENT),
+            (Pathway.ETHICS.value, CONFIDENT),
+            (Pathway.ETHICS.value, GROWING),
+        ],
+    )
+    assert score.primary == Pathway.MANAGEMENT.value
+    assert score.ascending == Pathway.ETHICS.value
+    assert score.is_pure is False
+    assert score.depth == [Pathway.ETHICS.value]
+    copy = describe(score)
+    assert copy["subtitle"] == "Management — ascending Ethics"
+    assert copy["depth_note"] == ""
+
+
+def test_depth_note_still_shows_a_pathway_that_does_not_overlap():
+    """Only the overlapping depth pathway is dropped from the note — a depth
+    pathway distinct from both primary and ascending is still named.
+    """
+    score = score_answers(
+        [
+            (Pathway.MANAGEMENT.value, CONFIDENT),
+            (Pathway.MANAGEMENT.value, GROWING),
+            (Pathway.ETHICS.value, CONFIDENT),
+            (Pathway.ETHICS.value, GROWING),
+            (Pathway.TECHNICAL.value, GROWING),
+            (Pathway.TECHNICAL.value, GROWING),
+        ],
+    )
+    assert score.primary == Pathway.MANAGEMENT.value
+    assert score.ascending == Pathway.TECHNICAL.value
+    # The raw signal still includes both qualifying pathways...
+    assert score.depth == [Pathway.MANAGEMENT.value, Pathway.ETHICS.value]
+    # ...but the note only names the one that isn't already the primary
+    # or ascending result.
+    assert describe(score)["depth_note"] == "You're also building real depth in Ethics."

@@ -238,6 +238,8 @@ h1.title { font-size: 32px; line-height: 1.1; font-weight: 600; margin-top: 8px;
 
 #results p.desc { margin-top: 20px; font-size: 15.5px; line-height: 1.6; color: var(--text-mid); text-align: center; }
 
+#results p.depth-note { margin-top: 10px; font-size: 12.5px; line-height: 1.5; color: var(--text-low); text-align: center; }
+
 .toggle-breakdown {
   margin-top: 26px;
   width: 100%;

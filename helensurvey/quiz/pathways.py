@@ -158,3 +158,18 @@ for _key, _meta in PATHWAY_META.items():
 def pathway_context() -> list[dict]:
     """Pathway metadata in display order, for templates and the client bundle."""
     return [PATHWAY_META[p] for p in PATHWAY_ORDER]
+
+
+def encode_pathway_list(pathways: list[str]) -> str:
+    """Serialise pathway slugs into a single filterable CharField value.
+
+    Wrapped in leading/trailing commas (e.g. ",management,creative,") so a
+    lookup like ``depth__contains=",management,"`` matches only that exact
+    slug, never a slug that merely contains it as a substring.
+    """
+    return f",{','.join(pathways)}," if pathways else ""
+
+
+def decode_pathway_list(value: str) -> list[str]:
+    """Reverse :func:`encode_pathway_list`."""
+    return [p for p in value.strip(",").split(",") if p] if value else []

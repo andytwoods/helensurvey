@@ -33,6 +33,7 @@
     resTitle: document.getElementById("resTitle"),
     resSubtitle: document.getElementById("resSubtitle"),
     resDesc: document.getElementById("resDesc"),
+    resDepthNote: document.getElementById("resDepthNote"),
     toggleBreakdown: document.getElementById("toggleBreakdown"),
     breakdown: document.getElementById("breakdown"),
     breakdownRows: document.getElementById("breakdownRows"),
@@ -155,6 +156,8 @@
     el.resTitle.textContent = result.title;
     el.resSubtitle.textContent = result.subtitle;
     el.resDesc.textContent = result.description;
+    el.resDepthNote.textContent = result.depth_note || "";
+    el.resDepthNote.hidden = !result.depth_note;
     show("results");
   }
 

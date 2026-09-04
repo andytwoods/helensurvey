@@ -21,6 +21,8 @@ from .pathways import PATHWAY_ORDER
 from .pathways import RATING_SHORT
 from .pathways import Pathway
 from .pathways import Rating
+from .pathways import decode_pathway_list
+from .pathways import encode_pathway_list
 from .pathways import pathway_context
 from .scoring import describe
 from .scoring import score_answers
@@ -91,6 +93,7 @@ def submit(request: HttpRequest) -> JsonResponse:
             ascending=score.ascending,
             is_pure=score.is_pure,
             all_skip=score.all_skip,
+            depth=encode_pathway_list(score.depth),
         )
         Answer.objects.bulk_create(
             [
@@ -109,6 +112,7 @@ def submit(request: HttpRequest) -> JsonResponse:
             "confident": score.confident,
             "growing": score.growing,
             "skip": score.skip,
+            "depth": score.depth,
             "statements_per_pathway": _statements_per_pathway(statements.values()),
             **describe(score, name),
         },
@@ -286,6 +290,7 @@ def results_csv(request: HttpRequest) -> HttpResponse:
             "ascending",
             "is_pure",
             "all_skip",
+            "depth_pathways",
             *[f"confident_{p}" for p in pathways],
             *[f"growing_{p}" for p in pathways],
             *[f"skip_{p}" for p in pathways],
@@ -312,6 +317,7 @@ def results_csv(request: HttpRequest) -> HttpResponse:
                 response.ascending,
                 response.is_pure,
                 response.all_skip,
+                "; ".join(decode_pathway_list(response.depth)),
                 *[tallies[Rating.CONFIDENT][p] for p in pathways],
                 *[tallies[Rating.GROWING][p] for p in pathways],
                 *[tallies[Rating.SKIP][p] for p in pathways],
